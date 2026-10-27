@@ -16,12 +16,13 @@ module RedmineImpersonate
         defaults
       end
 
-      # If user is impersonating, show message on the top
-      def view_layouts_base_html_head(context = {})
+      # If user is impersonating, show message on the top. body_top rather than
+      # html_head, which put this <div> inside <head> and relied on the browser
+      # moving it out.
+      def view_layouts_base_body_top(context = {})
         session = context[:controller].session
 
         if session[:true_user_id]
-          true_user = User.find(session[:true_user_id])
           impersonated_user = User.current
           style = 'margin: 0; padding: 10px; border-width: 0 0 2px; background-image: none'
 
@@ -41,9 +42,11 @@ module RedmineImpersonate
         return if !User.current.admin? || user == User.current || !user.active? || session[:true_user_id]
         return if context[:controller].action_name == 'new'
 
-        link = link_to l(:button_impersonate),
+        # Icon and 'icon' class like core's own links in the same .contextual,
+        # which have all carried a sprite icon since Redmine 6.
+        link = link_to sprite_icon('spy', l(:button_impersonate), plugin: 'redmine_impersonate'),
                        { controller: 'impersonation', action: 'create', user_id: user.id },
-                       method: :post, id: 'impersonate'
+                       method: :post, id: 'impersonate', class: 'icon icon-impersonate'
 
         # Move link to contextual
         script = "<script>$('#impersonate').prependTo('#content > .contextual:first')</script>".html_safe
